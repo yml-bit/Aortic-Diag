@@ -23,7 +23,7 @@ from collections import OrderedDict
 import logging
 logging.basicConfig(level=logging.DEBUG)
 from collections import Counter
-import math
+import time
 
 # 设置打印选项，使得所有数组都以小数形式输出，且设置小数点后保留的位数
 np.set_printoptions(suppress=True, precision=8)  # suppress=True 禁用科学记数法，precision设置小数点后的位数
@@ -292,11 +292,33 @@ def remove_common_elements_except_1(list1, list2):
 
 #statis3：多病变判别
 def compute_confusion_matrix_mutil(ref_mask, pred_mask, img_array):
-    # threshold1 = [14000,14000,14000,14000]  # nor jc dml xz
-    # threshold2 = [14000,48000,64000,14000]
-    threshold1 = [4000,4000,4000,4000]  # nor jc dml xz
-    threshold2 = [14000,48000,64000,14000]#0116
-    # threshold2 = [14000,48000,64000,6000]#0117
+    # threshold1 = [4000,4000,4000,4000]  # nor jc dml xz
+    # threshold2 = [14000,48000,64000,14000]#0116 16600
+
+    # 1-最小值: 15105、 2-最小值: 40607、3-最小值: 19383、4-最小值: 11544
+    # threshold1 = [10000, 10000, 10000, 10000]  # nor jc dml xz
+    threshold1 = [15000, 40000, 19000, 11000]  # 效果最好
+    # threshold2 = [4000,4000,4000,4000]
+    # threshold2 = [6000,6000,6000,6000]
+    # threshold2 = [8000,8000,8000,8000]
+    # threshold2 = [10000, 10000, 10000, 10000]  #
+    # threshold2 = [12000, 12000, 12000, 12000]  #
+    # threshold2 = [14000, 14000, 14000, 14000]  #
+    # threshold2 = [16000, 16000, 16000, 16000]  #
+    # threshold2 = [18000, 18000, 18000, 18000]  #
+    # threshold2 = [13000, 13000, 13000, 13000]  #
+    # threshold2 = [15000, 15000, 15000, 15000]  # 效果最好
+    # threshold2 = [17000, 17000, 17000, 17000]  #
+
+    threshold2 = [15000, 40000, 19000, 11000]  # 效果最好
+    # threshold2 = [14000, 39000, 18000, 10000]  #
+    # threshold2 = [13000, 38000, 17000, 9000]  #
+    # threshold2 = [11000, 36000, 15000, 7000]  #
+    # threshold2 = [7000, 32000, 11000, 3000]  #
+    # threshold2 = [19000, 44000, 23000, 15000]  #
+    # threshold2 = [23000, 48000, 27000, 19000]  #
+
+    # threshold2 = [14000,48000,64000,6000]#
     confusion_matrix = np.zeros((5, 5), dtype=int)
     re_ca=calcium_Severity2(img_array, ref_mask)
     pred_ca=calcium_Severity2(img_array, ref_mask)
@@ -400,18 +422,18 @@ def confusion_matrix1a():
     # models=["nnUNetTrainerMednext","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
     #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet"]#"nnUNetTrainerMaCNN2",
 
-    # models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-    models=["nnUNetTrainerMaCNN2"]
+    models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
+            "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
+    # models=["nnUNetTrainerMaCNN2"]
     #"nnUNetTrainerMaCNN",
     labels = ["hnnk", "lz", "cq"]
     # labels = ["lz"]
     # out = "./p3t1a_unique_confusion/"
-    out = "./14000/p3t1a_mutil_confusion/"
+    out = "./15000/p3t1a_mutil_confusion/"
     os.makedirs(out, exist_ok=True)
     for model in models:
         # model="nnUNetTrainerMaCNN"
-        pp = "test1/p3t_1a/"+model
+        pp = "p3test1/p3t_1a/"+model
         output_file = out + model + "_p3confusion.txt"
         i = 0
         for label in labels:
@@ -466,13 +488,14 @@ def confusion_matrix1b():
     models=["nnUNetTrainerMaCNN4"]
     #"nnUNetTrainerMaCNN",
     labels = ["hnnk", "lz", "cq"]
+    # labels = ["hnnk"]
     # out = "./14000/p3t1b_unique_confusion/"
-    out = "./14000/p3t1a_mutil_confusion/"
+    out = "./15000/p3t1b_mutil_confusion/"
     os.makedirs(out, exist_ok=True)
     for model in models:
         # model="nnUNetTrainerMaCNN"
-        pp = "test1/p3t_1b/"+model
-        output_file = out + model + "_p3confusion.txt"
+        pp = "p3test1/p3t_1b/"+model
+        output_file = out + model + "_p3confusion_19000.txt"
         i = 0
         for label in labels:
             labelsTs = "/media/bit301/data/yml/data/p3_crop_preseg/external/"+label  # hnnk lz cq
@@ -501,126 +524,6 @@ def confusion_matrix1b():
 
                 # confusion_matrix += compute_confusion_matrix_unique1(mask1, mask2,image)#>400 重度钙化
                 confusion_matrix += compute_confusion_matrix_mutil(mask1, mask2, image)  # >400 重度钙化
-
-                i = i + 1
-                if i % 10 == 0:
-                    print('numbers:', i)
-            # 输出混淆矩阵
-            outname = model + "    " + label
-            with open(output_file, 'a') as file:
-                file.write(outname + "\n")
-                file.write(f"{confusion_matrix}\n")
-                file.write("\n")
-        print("finished "+model)
-
-def confusion_matrix2ad():
-    # 第一级为p2a-nnUNetTrainerMaCNN2分割binary mask。
-    # 第二级为p2ad-多个模型分割. ##动脉瘤，钙化，血栓，软斑块，内膜片
-
-    # models=["nnUNetTrainerMednext","nnUNetTrainerMaCNN2","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet","nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-    # models=["nnUNetTrainerMaCNN2","nnUNetTrainerMednext","nnUNetTrainerNnformer",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet"]
-    # models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerSwinUNETR","nnUNetTrainerSegResNet"]
-    models=["nnUNetTrainerMaCNN2"]
-    #"nnUNetTrainerMaCNN4",
-    labels = ["hnnk", "lz", "cq"]
-    out = "./p3t2ad_unieuqe_confusion/"
-    os.makedirs(out, exist_ok=True)
-    for model in models:
-        # model="nnUNetTrainerMaCNN"
-        pp = "test2ad/p3t/"+model
-        output_file = out + model + "_p3t2adconfusion.txt"
-        i = 0
-        for label in labels:
-            labelsTs = "/media/bit301/data/yml/data/p3_crop_preseg/external/"+label  # hnnk lz cq
-            # out_test=labelsTs.replace("hnnk","unet/hnnk")
-            confusion_matrix = np.zeros((5, 5), dtype=int)
-            labelsTs_list = []
-            out_test_list=[]
-            for root, dirs, files in os.walk(labelsTs, topdown=False):
-                for k in range(len(files)):
-                    path = os.path.join(root, files[k])
-                    if "3.nii.gz" in path:
-                        # path="/media/bit301/data/yml/data/p2_nii/external/cq/dis/dmzyyh/PA57/2.nii.gz"
-                        labelsTs_list.append(path)
-            for path in labelsTs_list:
-                read0 = sitk.ReadImage(path.replace("3.nii.gz","0.nii.gz"), sitk.sitkInt16)
-                image = sitk.GetArrayFromImage(read0)  # real
-
-                read = sitk.ReadImage(path, sitk.sitkInt16)
-                mask1 = sitk.GetArrayFromImage(read)#real
-
-                # pp = "test2/p3t/nnUNetTrainerMaCNN"
-                target_path = path.replace("p3_crop_preseg", pp)  # test/MedNeXtx2
-                target_path=target_path.replace("3.nii.gz","2.nii.gz")
-                read = sitk.ReadImage(target_path, sitk.sitkInt16)  # 使用sitk重新保存，这样占用内存小很多
-                mask2 = sitk.GetArrayFromImage(read)#predict
-                confusion_matrix += compute_confusion_matrix_unique1(mask1, mask2,image)#>400 重度钙化
-                # confusion_matrix += compute_confusion_matrix_mutil(mask1, mask2, image)  # >400 重度钙化
-
-                i = i + 1
-                if i % 10 == 0:
-                    print('numbers:', i)
-            # 输出混淆矩阵
-            outname = model + "    " + label
-            with open(output_file, 'a') as file:
-                file.write(outname + "\n")
-                file.write(f"{confusion_matrix}\n")
-                file.write("\n")
-        print("finished "+model)
-
-###统计级联分割的判别情况
-def confusion_matrix3():
-    # 第一级为p2a-nnUNetTrainerMaCNN2分割binary mask。
-    # 第二级为p2aa-多个模型分割 mutil-types mask. ##动脉瘤，钙化，血栓，软斑块，内膜片
-    # 第三级为p3 nnUNetTrainerMaCNN2
-
-    # models=["nnUNetTrainerMednext","nnUNetTrainerMaCNN2","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet","nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-    # models=["nnUNetTrainerMaCNN2","nnUNetTrainerMednext","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet"]
-    # models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-    models=["nnUNetTrainerMaCNN2"]
-    #"nnUNetTrainerMaCNN",
-    labels = ["hnnk", "lz", "cq"]
-    out = "./p3t3_unieuqe_confusion/"
-    os.makedirs(out, exist_ok=True)
-    for model in models:
-        # model="nnUNetTrainerMaCNN"
-        pp = "test3/p3ta/"+model
-        output_file = out + model + "_p3t3confusion.txt"
-        i = 0
-        for label in labels:
-            labelsTs = "/media/bit301/data/yml/data/p3_crop_preseg/external/"+label  # hnnk lz cq
-            # out_test=labelsTs.replace("hnnk","unet/hnnk")
-            confusion_matrix = np.zeros((5, 5), dtype=int)
-            labelsTs_list = []
-            out_test_list=[]
-            for root, dirs, files in os.walk(labelsTs, topdown=False):
-                for k in range(len(files)):
-                    path = os.path.join(root, files[k])
-                    if "3.nii.gz" in path:
-                        # path="/media/bit301/data/yml/data/p2_nii/external/cq/dis/dmzyyh/PA57/2.nii.gz"
-                        labelsTs_list.append(path)
-            for path in labelsTs_list:
-                read0 = sitk.ReadImage(path.replace("3.nii.gz","0.nii.gz"), sitk.sitkInt16)
-                image = sitk.GetArrayFromImage(read0)  # real
-
-                read = sitk.ReadImage(path, sitk.sitkInt16)
-                mask1 = sitk.GetArrayFromImage(read)#real
-
-                # pp = "test2/p3t/nnUNetTrainerMaCNN"
-                target_path = path.replace("p3_crop_preseg", pp)  # test/MedNeXtx2
-                target_path=target_path.replace("3.nii.gz","2.nii.gz")
-                read = sitk.ReadImage(target_path, sitk.sitkInt16)  # 使用sitk重新保存，这样占用内存小很多
-                mask2 = sitk.GetArrayFromImage(read)#predict
-                confusion_matrix += compute_confusion_matrix_unique1(mask1, mask2,image)#>400 重度钙化
-                # confusion_matrix += compute_confusion_matrix_mutil(mask1, mask2, image)  # >400 重度钙化
 
                 i = i + 1
                 if i % 10 == 0:
@@ -805,13 +708,15 @@ def diameter_area(mask):
     return diameter_in, area_per_lumen #
 
 def diameter_index():
-    models=["nnUNetTrainerMaCNN2"]
-    labels = ["hnnk", "lz", "cq"]
-    out = "./p3t_unique_confusion/"
-    os.makedirs(out, exist_ok=True)
+    models=["nnUNetTrainerMaCNN4"]
+    # labels = ["hnnk", "lz", "cq"]#nnUNetTrainerMaCNN4
+    labels = ["hnnk"]
+    # out = "./p3t_unique_confusion/" #
+    # os.makedirs(out, exist_ok=True)
     for model in models:
         # model="nnUNetTrainerMaCNN"
-        pp = "test2a/p3t/" + model
+        # pp = "p3test2a/p3t/" + model  # p3t
+        pp = "p3test2a/p3t_lowers/" + model#p3t
         i = 0
         for label in labels:
             labelsTs = "/media/bit301/data/yml/data/p3/external/" + label  # hnnk lz cq
@@ -854,7 +759,8 @@ def diameter_index():
                 lumen_mask2a = np.where(lumen_mask2a > 0, 1, 0)
                 ex_diameter2a, area2a = diameter_area(lumen_mask2a)#外接圆半径，狭窄指数
 
-                path_save=os.path.join(out,target_path.split("test2a/")[1].replace("p3t","p3t_index"))
+                # path_save=os.path.join(out,target_path.split("p3test2a/")[1].replace("p3t","p3t_index"))
+                path_save = target_path.split("p3test2a/")[1].replace("p3t_lower", "p3t_index")#p3t_lower=p3t
                 h5_path_save = path_save.replace(".nii.gz", ".h5")
                 file_path=os.path.dirname(h5_path_save)
                 if os.path.exists(file_path):#存在就删除然后再创建
@@ -890,10 +796,10 @@ def caculate_by_index(ex_diameter):
     # ex_diametera = low_pass_filter(ex_diameter2a, cutoff_frequency, fs)
     # # per_index2 = low_pass_filter(per_index2, cutoff_frequency, fs)
 
-    window_length = 51  # 窗口长度，必须为奇数
+    window_length = 51  #
     polyorder = 4  # 多项式阶数
     try:
-        ex_diameter2a = savgol_filter(ex_diameter2a, window_length=window_length, polyorder=polyorder)
+        ex_diameter2a = savgol_filter(ex_diameter2a, window_length=window_length, polyorder=polyorder)#平滑
     except:
         aa=1
 
@@ -913,8 +819,8 @@ def caculate_by_index(ex_diameter):
     # plt.show()
 
     # le=len(ex_diameter2a)
-    threshold_diameter=45 #55 50
-    thresold_stenosis_index=0.4
+    threshold_diameter=45 #血管直径
+    # thresold_stenosis_index=0.4
     sum_d = np.sum(ex_diameter2a > threshold_diameter)
     flag1=0
     flag2=0
@@ -923,17 +829,22 @@ def caculate_by_index(ex_diameter):
         flag1=2
 
     # # 3. 构建滑动窗口并检测动脉瘤
-    window_size = 45  # 窗口大小（可以根据需要调整）
-    stride = 10  # 滑动步长（可以根据需要调整）
+    window_size = 45  # 窗口大小（可以根据需要调整）65-20 a1;65-10 a2
+    stride = 20  # 滑动步长（可以根据需要调整）#20
     for i in range(0, len(ex_diameter2a) - window_size + 1, stride):
         window = ex_diameter2a[i:i + window_size]
 
         # 计算窗口内的最小直径，作为该窗口的“正常血管直径”
         sorted_arr = np.sort(window)#从小达到
-        normal_diameter=sorted_arr[1:int(window_size/8)*4].mean()
+        # normal_diameter=sorted_arr[int(window_size/8)*2:int(window_size/8)*4].mean() #效果不错
+        normal_diameter=sorted_arr[int(window_size/8)*3:int(window_size/8)*4].mean() #效果提升
+        # normal_diameter=sorted_arr[int(window_size/8)*4:int(window_size/8)*5].mean()#效果下降
         hig_mean=sorted_arr[-4:].mean()
         # normal_diameter = np.min(window)
-        threshold = 2 * normal_diameter
+        threshold = 2 * normal_diameter #
+        # if hig_mean<30:
+        #     threshold = 2.5 * normal_diameter  # 设定阈值为最小直径的 1.5 倍
+
         # if hig_mean<30:
         #     threshold = 1.5 * normal_diameter  # 设定阈值为最小直径的 1.5 倍
         # else:
@@ -942,11 +853,11 @@ def caculate_by_index(ex_diameter):
         # 检查窗口内是否存在超过阈值的直径
         if np.any(window > threshold):
             flag2 = 2
-    if flag1>0 and flag2>0:
+    if flag1>0 or flag2>0:
         flag=2
     return flag
 
-#融合判别
+#融合判别   全分辨率+融合
 def fusion_confusion():
     #1-nor,2-dml,3-jc,4-xz,10-cal
     # models=["nnUNetTrainerMednext","nnUNetTrainerMaCNN2","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
@@ -959,14 +870,14 @@ def fusion_confusion():
 
     # models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
     #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-    models=["nnUNetTrainerMaCNN2"]
+    models=["nnUNetTrainerMaCNN4"]
     # out = "./p3t1a_unique_fusion/"
     out = "./14000/p3t1a_mutil_fusion/"
-    p_index = "p3t_index/nnUNetTrainerMaCNN2/external"
-    pp="test1/p3t_1a/"
+    p_index = "p3t_index/nnUNetTrainerMaCNN4/external"
+    pp="p3test1/p3t_1a/"
     # pp="test2ad/p3t/"
-    # labels = ["hnnk", "lz", "cq"]
-    labels = ["hnnk", "lz"]
+    labels = ["hnnk", "lz", "cq"]
+    # labels = ["hnnk"]
     # labels = ["cq"]
     for model in models:
         output_file = out + model + "_p3confusion.txt"
@@ -1062,28 +973,20 @@ def fusion_confusion():
                 file.write("\n")
         print("finished " + model)
 
-##效果不好
+##效果不好，使用的是这个
 def fusion_confusionad():
     #1-nor,2-dml,3-jc,4-xz,10-cal
-    # models=["nnUNetTrainerMednext","nnUNetTrainerMaCNN2","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet","nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
-
-    # models=["nnUNetTrainerMednext","nnUNetTrainerMaCNN2","nnUNetTrainerUNETR","nnUNetTrainerSwinUNETR",
-    #         "nnUNetTrainerSegMamba","nnUNetTrainerUXnet"]
-
-    # models=["nnUNetTrainerUxLSTMBot","nnUNetTrainer",
-    #         "nnUNetTrainerUMambaBot","nnUNetTrainerNnformer","nnUNetTrainerSegResNet"]
     models=["nnUNetTrainerMaCNN4"]
     # out = "./p3t1a_unique_fusion/"
-    out = "./14000/p3t1b_mutil_fusion/"
-    p_index = "p3t_index/nnUNetTrainerMaCNN2/external"
-    pp="test1/p3t_1b/"
+    # out = "./14000/p3t1b_mutil_fusion/"
+    out = "./15000/p3t1b_mutil_fusion/"
+    p_index = "p3t_indexs/nnUNetTrainerMaCNN4/external"
+    pp="p3test1/p3t_1b/"
     # pp="test2ad/p3t/"
-    labels = ["hnnk", "lz", "cq"]
-    # labels = ["cq"]
+    # labels = ["hnnk", "lz", "cq"]
+    labels = ["cq"]
     for model in models:
-        output_file = out + model + "_p3confusion.txt"
+        output_file = out + model + "_p3confusion2b65.txt"
         folder_path = os.path.dirname(output_file)
         os.makedirs(folder_path, exist_ok=True)
         i = 0
@@ -1123,7 +1026,7 @@ def fusion_confusionad():
                     flag=0
 
                 read0 = sitk.ReadImage(path.replace("3.nii.gz", "0.nii.gz"), sitk.sitkInt16)
-                image = sitk.GetArrayFromImage(read0)  # real
+                image = sitk.GetArrayFromImage(read0)  #real
 
                 read = sitk.ReadImage(path, sitk.sitkInt16)
                 mask1 = sitk.GetArrayFromImage(read)  # real
@@ -1218,9 +1121,12 @@ def postprocess_mask():
     models=["nnUNetTrainerMaCNN4"]#nnUNetTrainerMaCNN2
     # out = "./p3t1a_unique_fusion/"
     # out = "./14000/p3t1b_mutil_fusion/"
-    p_index = "p3t_index/nnUNetTrainerMaCNN2/external"
-    pp="test1/p3t_1b/"
-    ppp="test2a/p3t/nnUNetTrainerMaCNN2"
+    # p_index = "p3t_index/nnUNetTrainerMaCNN2/external"
+    p_index = "p3t_indexs/nnUNetTrainerMaCNN4/external"
+    pp="p3test1/p3t_1b/"
+    # ppp="p3test2a/p3t/nnUNetTrainerMaCNN2"
+    ppp = "p3test2a/p3t_lowers/nnUNetTrainerMaCNN4"
+
     labels = ["hnnk","lz", "cq"]#"hnnk",
     # labels = ["cq"]
     for model in models:
@@ -1284,7 +1190,7 @@ def postprocess_mask():
                         mask0_only=remain(mask0_only)
                         mask2=mask2+mask0_only*2
                         out2 = sitk.GetImageFromArray(mask2)
-                        out2_path = target_path.replace("/nnUNetTrainerMaCNN4/", "/nnUNetTrainerMaCNN4p/")  # "33.nii.gz"
+                        out2_path = target_path.replace("/nnUNetTrainerMaCNN4/", "/nnUNetTrainerMaCNN4post/")  # "33.nii.gz"
                         folder_path = os.path.dirname(out2_path)
                         os.makedirs(folder_path, exist_ok=True)
                         sitk.WriteImage(out2, out2_path)
@@ -1298,7 +1204,7 @@ def postprocess_mask():
         print("finished " + model)
 
 ################ 数据分布统计+依据混淆计算评测结果##############
-def statis():
+def statis1():
     labels = ["hnnk", "lz", "cq"]
     # labels = ["cq"]
     for label in labels:
@@ -1335,6 +1241,72 @@ def statis():
         count_dict = dict(Counter(tref))
         for key in sorted(count_dict):
             print(f"{key}: {count_dict[key]}")
+
+def statis2():
+    labelsTs = "/media/bit301/data/yml/data/p3/internal/"  # hnnk lz cq
+    # labelsTs = "/media/bit301/data/yml/data/p3/internal/"  # hnnk lz cq
+    labelsTs_list = []
+    for root, dirs, files in os.walk(labelsTs, topdown=False):
+        for k in range(len(files)):
+            path = os.path.join(root, files[k])
+            if "3.nii.gz" in path:  # and "hnnk" not in path:
+                # path="/media/bit301/data/yml/data/p2_nii/external/cq/dis/dmzyyh/PA57/2.nii.gz"
+                labelsTs_list.append(path)
+
+    # 存储每个类别的体素数列表：key=类别ID，value=体素数列表（每个满足条件的样本中该类别的总体素数）
+    class_voxel_dict = {}
+    # 遍历每个分割文件
+    i=1
+    for path in labelsTs_list:
+        # print(f"Processing: {os.path.basename(path)}")
+        try:
+            # 读取分割 mask
+            read = sitk.ReadImage(path, sitk.sitkInt16)
+            mask_array = sitk.GetArrayFromImage(read)  # 3D numpy array
+
+            # 获取所有唯一类别，去除背景（假设 label <= 1 为背景或忽略类）
+            unique_classes = np.unique(mask_array)
+            valid_classes = unique_classes[unique_classes > 0]
+
+            # 遍历每个有效类别
+            for class_id in valid_classes:
+                # 计算该类别在当前样本中的总分割体素数
+                voxel_count = np.sum(mask_array == class_id)
+                # 只保留体素数 >= 64 的类别（即“足够大”的病变）
+                if voxel_count >= 64:
+                    if class_id not in class_voxel_dict:
+                        class_voxel_dict[class_id] = []
+                    class_voxel_dict[class_id].append(voxel_count)
+
+        except Exception as e:
+            print(f"Error reading {path}: {e}")
+        i = i + 1
+        if i % 10 == 0:
+            print('numbers:', i)
+
+    print("\n" + "=" * 60)
+    print("各病变类别的体素数分布统计（仅体素 ≥ 64 的样本）")
+    print("=" * 60)
+    for class_id in sorted(class_voxel_dict.keys()):
+        counts = np.array(class_voxel_dict[class_id])
+        n_samples = len(counts)
+        min_val = np.min(counts)
+        max_val = np.max(counts)
+        q1, q2, q3 = np.percentile(counts, [25, 50, 75])  # 四分位数
+        mean_val = np.mean(counts)
+        std_val = np.std(counts)
+
+        print(f"\n[类别 {class_id}] 样本数: {n_samples}")
+        print(f"  Q1 (25%): {q1:.1f}")
+        print(f"  Q2 (中位数, 50%): {q2:.1f}")
+        print(f"  Q3 (75%): {q3:.1f}")
+        print(f"  最小值: {min_val}")
+        print(f"  最大值: {max_val}")
+        print(f"  均值: {mean_val:.1f}, 标准差: {std_val:.1f}")
+
+        # 可选：频次分布（适用于体素数较少且离散的情况）
+        # count_freq = dict(Counter(counts.astype(int)))
+        # print(f"  频次分布: {dict(sorted(count_freq.items()))}")
 
 def parse_confusion_matrix(file_path, ss):
     """
@@ -1491,19 +1463,27 @@ def confuse_plot(cm, save_path):
     plt.close(fig)
 
 def confusion_matrics():
-    # models = ["nnUNetTrainerMednext", "nnUNetTrainerMaCNN4", "nnUNetTrainerUNETR", "nnUNetTrainerSwinUNETR",
+    # models = ["nnUNetTrainerMednext",  "nnUNetTrainerUNETR", "nnUNetTrainerSwinUNETR",
     #           "nnUNetTrainerSegMamba", "nnUNetTrainerUXnet", "nnUNetTrainerUxLSTMBot", "nnUNetTrainer",
     #           "nnUNetTrainerUMambaBot", "nnUNetTrainerNnformer", "nnUNetTrainerSegResNet",]
-    models=["nnUNetTrainerMaCNN4"]
-    path = "./14000/p3t1a_mutil_confusion/"
+    # models=["nnUNetTrainerMaCNN4"]
+    # models=["_7000","_11000","_15000","_19000","_23000"]#2b45
+    # models=["2b45","2b55","2b65","2b75","2b85"]#2b45
+    # models=["_15000"]#2b45
+    models=["2b65"]#2b45
+    # path = "./15000/p3t1a_mutil_confusion/"
     # path = "./14000/p3t1a_mutil_fusion/"#
-    # path = "./14000/p3t1b_mutil_fusion/"#
+    # path = "./15000/p3t1b_mutil_confusion/"#
+    path = "./15000/p3t1b_mutil_fusion/"#
     out_put = path +"Confuse_disp"
     if not os.path.isdir(out_put):
         os.makedirs(out_put)
-    for model in models:
-        confusion_path = path + model + "_p3confusion.txt"
-        file_path = path + "Metrics/"+ model + "metrics.txt"
+    for modell in models:
+        model="nnUNetTrainerMaCNN4"
+        # confusion_path = path + model + "_p3confusion.txt"
+        # file_path = path + "Metrics/"+ model + "metrics.txt"
+        confusion_path = path + model + "_p3confusion"+modell+".txt"
+        file_path = path + "Metrics/"+ model + "metrics"+modell+".txt"
         folder_path = os.path.dirname(file_path)
         os.makedirs(folder_path, exist_ok=True)
         matrices = parse_confusion_matrix(confusion_path, model)
@@ -1527,6 +1507,47 @@ def confusion_matrics():
                     file.write("\n")
         print("finished " + model)
 
+def total_matrics():
+    models=["nnUNetTrainerMaCNN4"]
+    # models=["_15000"]#2b45
+    models=["2b65"]#2b45
+    # path = "./15000/p3t1b_mutil_confusion/"#
+    path = "./15000/p3t1b_mutil_fusion/"#
+    out_put = path +"Confuse_disp"
+    if not os.path.isdir(out_put):
+        os.makedirs(out_put)
+    for modell in models:
+        model="nnUNetTrainerMaCNN4"
+        # confusion_path = path + model + "_p3confusion.txt"
+        # file_path = path + "Metrics/"+ model + "metrics.txt"
+        confusion_path = path + model + "_p3confusion"+modell+".txt"
+        file_path = path + "Metrics/"+ model + "metrics"+modell+"total.txt"
+        folder_path = os.path.dirname(file_path)
+        os.makedirs(folder_path, exist_ok=True)
+        matrices = parse_confusion_matrix(confusion_path, model)
+        matrixx=0
+        for label, matrix in matrices.items():
+            save_path = os.path.join(out_put, model +label)  # mm="matrix1b_m"
+            matrixx+=matrix
+        metrics, class_metrics = conf_index(matrixx)
+        with open(file_path, 'a') as file:
+            file.write(label + "\n")
+            file.write("Overall Metrics:\n")
+            for key, value in metrics.items():
+                file.write(f"{key}: {value}\n")
+            file.write("\n")
+
+            # 打印每个类别的指标
+            file.write("\nClass Metrics:\n")
+            class_metricc=0
+            for class_name, class_metric in class_metrics.items():
+                for key, value in class_metric.items():
+                    class_metricc+=value
+                    file.write(f"  {key}: {value}\n")
+                file.write("\n")
+    print("finished " + model)
+
+#管腔，血管，钙化指数 曲线
 def disp():
     f = open("/media/bit301/data/yml/project/python310/p3/process/disp.txt")  # hnnk test.txt
     path_list = []
@@ -1535,8 +1556,8 @@ def disp():
             path_list.append(path)
     # path_list=["/media/bit301/data/yml/data/p3/external/cq/dis/dml/PA1/3.nii.gz"]
     ij=0
-    out = "./14000/p3t1a_mutil_fusion/"
-    p_index = "p3t_index/nnUNetTrainerMaCNN2/external"
+    out = "./14000/p3t1b_mutil_fusion/"
+    p_index = "p3t_indexs/nnUNetTrainerMaCNN4/external"
     for path in path_list:
         index_path = os.path.join(p_index, path.split("external/")[1]).replace("3.nii.gz", "22.h5")
         with h5py.File(index_path, 'r') as f_mea:
@@ -1593,70 +1614,6 @@ def disp():
         # 显式关闭当前figure
         plt.close(fig)
 
-#管腔，血管，钙化指数 曲线
-def disp1():
-    f = open("/media/bit301/data/yml/project/python39/p2/Aorta_net/data/disp1.txt")  # hnnk test.txt
-    path_list = []
-    for line in f.readlines():#tile_step_size=0.75较好处理官腔错位问题
-            path=line.split('\n')[0]
-            path_list.append(path)
-    ij=0
-    for path in path_list:
-        calcium_gd = 0
-        calcium_mea = 0
-        with h5py.File(path, 'r') as f_gd:#评估四分位数据
-            diameter_per_lumen = f_gd['diameter_per_lumen'][:]
-            diameter_per_total = f_gd['diameter_per_total'][:]
-            calcium_per_index = f_gd['calcium_per_index'][:]
-            total_calcium_index = f_gd['total_calcium_index'][:]
-
-        path_mea=path.replace("2.h5","22.h5")
-        with h5py.File(path_mea, 'r') as f_mea:#评估四分位数据
-            diameter_per_lumen_mea = f_mea['diameter_per_lumen'][:]
-            diameter_per_total_mea = f_mea['diameter_per_total'][:]
-            calcium_per_index_mea = f_mea['calcium_per_index'][:]
-            total_calcium_index_mea = f_mea['total_calcium_index'][:]
-
-        max_len = len(diameter_per_lumen)
-        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(5, 10), sharey=True, layout='constrained')#(4, 12)
-        line_color1 = 'b'
-        line_color2 = 'r'
-        line_width = 1
-        # q1_color = "deepskyblue"
-        # q2_color = "r"
-        for ax in axs:
-            ax.invert_yaxis()
-
-        axs[0].plot(diameter_per_lumen[::-1], range(max_len), color=line_color1, linewidth=line_width, label='True')
-        axs[0].plot(diameter_per_lumen_mea[::-1], range(max_len), color=line_color2, linewidth=line_width, label='Pred')
-        axs[0].set_title('Lumen',fontsize=10)
-        axs[0].set_xlabel('Diameter', fontsize=10)  # 添加横轴标题 pixel
-        axs[0].set_ylabel('Slice Number', fontsize=10)  # 添加纵轴标题
-        axs[0].legend(loc='best', fontsize=10)  # 添加图例，loc='best' 表示自动寻找最佳位置放置图例
-
-        axs[1].plot(diameter_per_total[::-1], range(max_len), color=line_color1, linewidth=line_width, label='True')
-        axs[1].plot(diameter_per_total_mea[::-1], range(max_len), color=line_color2, linewidth=line_width, label='Pred')
-        axs[1].set_title('Vessel ',fontsize=10)
-        axs[1].set_xlabel('Diameter', fontsize=10)  # 添加横轴标题
-        axs[1].legend(loc='best', fontsize=10)  # 添加图例，loc='best' 表示自动寻找最佳位置放置图例
-
-        axs[2].plot(calcium_per_index[::-1], range(max_len), color=line_color1, linewidth=line_width, label='True')
-        axs[2].plot(calcium_per_index_mea[::-1], range(max_len), color=line_color2, linewidth=line_width, label='Pred')
-        axs[2].set_title('Calcification',fontsize=10)
-        axs[2].set_xlabel('Index', fontsize=10)  # 添加横轴标题
-        axs[2].legend(loc='best', fontsize=10)  # 添加图例，loc='best' 表示自动寻找最佳位置放置图例
-        # plt.savefig("High resoltion.png", dpi=600)
-        out_put = "disp"
-        if not os.path.isdir(out_put):
-            os.makedirs(out_put)
-        file=path.split("Aortic_index/")[1].split("/2")[0].replace("/","_")+".tif"
-        save_path = os.path.join(out_put, file)
-        plt.savefig(save_path)#矢量图
-        # plt.savefig(save_path, dpi=600)
-        # plt.show()
-        # 显式关闭当前figure
-        plt.close(fig)
-
 #Bland-Altman
 def dot_plot(data,save_path):
     gd="True "+save_path.split("_")[-1]
@@ -1685,23 +1642,24 @@ def dot_plot(data,save_path):
     plt.close(fig)# 显式关闭当前figure
 
 if __name__ == '__main__':
-    # statis()
+    # statis1()#设定阈值统计
+    # statis2()#
     # confusion_matrix1a()#
     # fusion_confusion()
 
     # confusion_matrix1b()#
-    # fusion_confusionad()
-    # confusion_matrics()#
-
+    # time_start = time.time()
     # diameter_index()
+    fusion_confusionad()
+    # time_end = time.time()
+    # time_sum = time_end - time_start
+    # print("total time:", time_sum)
+    # print("mean time:", time_sum /40)
 
-    # confusion_matrix2ad()
-    # confusion_matrix3()#tr a
-
-
-    postprocess_mask()
+    # confusion_matrics()#绘制混淆矩阵图
+    # total_matrics()
+    # postprocess_mask() #前面混淆矩阵计算无误再运行这条
     # disp()
-
 
 
 
