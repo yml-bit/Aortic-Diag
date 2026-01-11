@@ -12,3 +12,5 @@ Guidelines
 4-inference: 
 (1)python ./nnunetv2/inference/predict_from_raw_data_1.py 0 nnUNetTrainerCNNSCA  or run bash ./command/test_total_1b.sh
 (2)reprocess: use process/data_process.py run postpossess function remove the small volume.
+
+Note：The model.rar file contains the trained model parameters, including sub-model 1 and sub-model 2.
