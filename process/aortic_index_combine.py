@@ -1640,17 +1640,291 @@ def dot_plot(data,save_path):
     plt.savefig(save_path, dpi=600)
     # plt.show()
     plt.close(fig)# 显式关闭当前figure
+def bland_altman_plot(data1, data2, save_path, *args, **kwargs):
+    # gd = "True " + save_path.split("_")[-1]
+    # mea = "Predict " + save_path.split("_")[-1] + " from NCCT"
+    save_path += ".tif"
+
+    mean = np.mean([data1, data2], axis=0)
+    diff = data1 - data2
+    md = np.mean(diff)
+    sd = np.std(diff, axis=0)
+
+    # plt.rcParams['font.sans-serif'] = ['Times New Roman']
+    # plt.rcParams['axes.unicode_minus'] = False
+
+    # fig, ax = plt.subplots(figsize=(7.5, 5), dpi=600)
+    fig, ax = plt.subplots(figsize=(7.5, 5))
+    ax.set_facecolor('white')
+
+    # Calculate the limits for the axes based on the data
+    xlim_min = mean.min() - 0.1 * abs(mean.max() - mean.min())
+    xlim_max = mean.max() + 0.1 * abs(mean.max() - mean.min())
+    ylim_min = diff.min() - 0.1 * abs(diff.max() - diff.min())
+    ylim_max = diff.max() + 0.1 * abs(diff.max() - diff.min())
+
+    # 确保ylim可以包含所有数据和参考线
+    ylim_extra = 1.96 * sd * 1.1
+    ylim_min = min(ylim_min, md - 1.96 * sd - ylim_extra)
+    ylim_max = max(ylim_max, md + 1.96 * sd + ylim_extra)
+
+    ax.set_xlim(xlim_min, xlim_max)
+    ax.set_ylim(ylim_min, ylim_max)
+
+    plt.axhline(md, color="gray", linestyle='-.', lw=1.2, zorder=1)
+    plt.axhline(md + 1.96 * sd, color="#ABD7EC", linestyle='--', lw=1.2, zorder=1)
+    plt.axhline(md - 1.96 * sd, color="#ABD7EC", linestyle='--', lw=1.2)
+
+    # '#ABD7EC'
+    print('差值的均值为：%.3f (%.3f ~ %.3f)' % (md, md - 1.96 * sd, md + 1.96 * sd))
+
+    # plt.scatter(mean, diff, *args, **kwargs,s=30, facecolors='none',
+    #             edgecolor="#F5BE8F", linewidths=1, alpha=1, zorder=2)
+    plt.scatter(mean, diff, *args, **kwargs, s=3, facecolors='none', marker="o",
+                edgecolors="#ED8828", linewidths=1, alpha=1, zorder=2)
+    #  "#F5BE8F" "#ED8828" "#70CDBE"  '#ABD7EC' '#A4DDD3' '#CCD376' royalblue
+
+    # scatter = ax.scatter(true_values, predicted_values, c=errors, cmap='viridis', s=20, alpha=0.8)
+    # cbar = fig.colorbar(scatter, ax=ax, label='Mean Absolute Percentage Error (%)')
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.2)
+
+    # Calculate offsets for text placement
+    offset_x = 0.05 * (mean.max() - mean.min())
+    offset_y = 0.05 * (diff.max() - diff.min())
+
+    # Place texts without overlap
+    plt.text(max(mean) + offset_x, md + 1.96 * sd + offset_y, '+1.96 SD', fontsize=11, ha='right')
+    # plt.text(max(mean) + offset_x, md +1.96 * sd-offset_y, '%.3f' % (md + 1.96 * sd), fontsize=10, ha='right')
+    plt.text(max(mean) + offset_x, md, 'Mean', fontsize=11, ha='right')
+    # plt.text(max(mean) + offset_x, md, '%.3f' % md, fontsize=10, ha='left', bbox=dict(facecolor='white', alpha=0.5))
+    plt.text(max(mean) + offset_x, md - 1.96 * sd - offset_y, '-1.96 SD', fontsize=11, ha='right')
+    # plt.text(max(mean) - offset_x, md - 1.96 * sd, '%.3f' % (md - 1.96 * sd), fontsize=10, ha='right', bbox=dict(facecolor='white', alpha=0.5))
+
+    plt.xlabel("Average", fontsize=11)
+    plt.ylabel("Difference", fontsize=11)
+    plt.gcf().subplots_adjust(bottom=0.15)
+
+    plt.tick_params(width=1.5, labelsize=11)  # Increase tick label size
+
+    # Uncomment the line below to save the figure
+    # plt.savefig(save_path, dpi=600)
+    # plt.show()
+    plt.savefig(save_path, dpi=300, format='tif')
+    plt.close(fig)
+
+def Bland_Altman():
+    path = "./p3t_indexs/nnUNetTrainerMaCNN4/hnnk"  # cq
+    save_name = path.split("/")[-2] + 'ba'
+    out_put = "Bland_disp"  # Bland_disp Bland_dispc Bland_disps
+    path_list = []
+    for root, dirs, files in os.walk(path, topdown=False):
+        for file in files:
+            path = os.path.join(root, file)
+            if "2.h5" in path and "22.h5" not in path:
+                path_list.append(path)
+    path_list = natsorted(path_list)
+    ii = 1
+    stenosis_gd = []
+    stenosis_mea = []
+    for path in path_list:
+        with h5py.File(path, 'r') as f_gd:  # 评估四分位数据
+            per_index = f_gd['ex_diameter'][:]
+
+        path_mea = path.replace("2.h5", "22.h5")
+        with h5py.File(path_mea, 'r') as f_mea:  # 评估四分位数据
+            per_index_mea = f_mea['ex_diameter1a'][:]
+        threshold = 13  # #initial screening。物理直径
+        above_threshold = per_index > threshold
+        greater_indices = np.where(above_threshold)[0]
+        if greater_indices.size > 0:
+            start_index = greater_indices[0]
+            end_index = greater_indices[-1]  # 注意这里需要加1,因为end_index是要包含在内的
+            length=len(per_index_mea)
+            if length - end_index > 48:  ##further screening
+                end_index = length - 48  # remove the small branch vessels
+            if end_index - start_index < 256:
+                start_index = end_index - 256  # 小于则补充全
+                if start_index < 0:
+                    start_index = 0
+        m1 = per_index_mea[start_index:end_index]  # 像钙化指数  groundtruth或reconstruction存在0/0,则会出现警告
+        m2 = per_index[start_index:end_index]
+
+        max_index = np.argmax(m1)
+        m1 = np.delete(m1, max_index)  # 去除异常值
+        m2 = np.delete(m2, max_index)
+
+        # mask = (m1 == 0) | (m1 == 1)
+        # m1 = m1[mask]
+        # m2 = m2[mask]
+
+        # indices = find_top_indices(m2,0.1)
+        # sampled_indices = np.round(indices).astype(int)
+        # m1 = m1[sampled_indices[:, 0]]
+        # m2 = m2[sampled_indices[:, 0]]
+        stenosis_mea.extend(m1)
+        stenosis_gd.extend(m2)
+
+    data1 = np.array(stenosis_mea)
+    data2 = np.array(stenosis_gd)
+
+    if not os.path.isdir(out_put):
+        os.makedirs(out_put)
+    save_path = os.path.join(out_put, save_name)
+    bland_altman_plot(data1, data2, save_path)
+
+def plot_index(ex_diameter):
+    ex_diameter=copy.deepcopy(ex_diameter[12:-12])#去除首尾异常值
+    index=np.where(ex_diameter>15)[0]
+    st=index.min()
+    ed=index.max()
+    ex_diameter2a = ex_diameter[st:ed]
+    # fs = 100  # 采样频率 (假设每秒采样 100 次)
+    # cutoff_frequency = 1  # 截止频率 (单位：Hz)
+    # ex_diametera = low_pass_filter(ex_diameter2a, cutoff_frequency, fs)
+    # # per_index2 = low_pass_filter(per_index2, cutoff_frequency, fs)
+
+    window_length = 51  #
+    polyorder = 4  # 多项式阶数
+    try:
+        ex_diameter2a = savgol_filter(ex_diameter2a, window_length=window_length, polyorder=polyorder)#平滑
+    except:
+        aa=1
+
+    # le=len(ex_diameter2a)
+    threshold_diameter=45 #血管直径
+    # thresold_stenosis_index=0.4
+    flag1=0 #绝对直径
+    flag2=0 #滑动窗
+    flag=0
+    sex_diameter2a=np.sort(ex_diameter2a)[::-1]
+    mm_diameter2a=np.mean(sex_diameter2a[:5])#最大直径
+    if mm_diameter2a>threshold_diameter:
+        flag1 = 2
+
+    # # 3. 构建滑动窗口并检测动脉瘤
+    window_size = 45  # 窗口大小（可以根据需要调整）65-20 a1;65-10 a2
+    stride = 20  # 滑动步长（可以根据需要调整）#20
+    # d_max=np.max(ex_diameter2a)
+    e_index=0
+    for i in range(0, len(ex_diameter2a) - window_size + 1, stride):
+        window = ex_diameter2a[i:i + window_size]
+
+        # 计算窗口内的最小直径，作为该窗口的“正常血管直径”
+        sorted_arr = np.sort(window)#从小达到
+        # normal_diameter=sorted_arr[int(window_size/8)*2:int(window_size/8)*4].mean() #效果不错
+        normal_diameter=sorted_arr[int(window_size/8)*3:int(window_size/8)*4].mean() #效果提升
+        # normal_diameter=sorted_arr[int(window_size/8)*4:int(window_size/8)*5].mean()#效果下降
+        hig_mean=sorted_arr[-4:].mean()
+        # normal_diameter = np.min(window)
+        threshold = 2 * normal_diameter #
+        e_index1=window.max()/normal_diameter
+        if e_index1>e_index:
+            e_index=e_index1
+        # if hig_mean<30:
+        #     threshold = 2.5 * normal_diameter  # 设定阈值为最小直径的 1.5 倍
+
+        # if hig_mean<30:
+        #     threshold = 1.5 * normal_diameter  # 设定阈值为最小直径的 1.5 倍
+        # else:
+        #     threshold = 2 * normal_diameter  # 设定阈值为最小直径的 1.5 倍
+
+        # 检查窗口内是否存在超过阈值的直径
+        if np.any(window > threshold):
+            flag2 = 2
+    if flag1>0 or flag2>0:
+        flag=2
+    return flag,e_index,mm_diameter2a
+
+def plot_morphological_decision_rules():
+    path = "./p3t_indexs/nnUNetTrainerMaCNN4/"  # cq
+    save_name = path.split("/")[-2]
+    out_put = "morphological_decision_plot"  # Bland_disp Bland_dispc Bland_disps
+    path_list = []
+    for root, dirs, files in os.walk(path, topdown=False):
+        for file in files:
+            path = os.path.join(root, file)
+            if "2.h5" in path and "22.h5" not in path:
+                path_list.append(path)
+    path_list = natsorted(path_list)
+    x_axis1 = []
+    y_axis1 = []
+    x_axis2 = []
+    y_axis2 = []
+    for path in path_list:
+        with h5py.File(path, 'r') as f_gd:  # 评估四分位数据
+            ex_diameter1a = f_gd['ex_diameter'][:]
+
+        path_mea = path.replace("2.h5", "22.h5")#基于NCCT分割掩码计算或的血管直径
+        with h5py.File(path_mea, 'r') as f_mea:  # 评估四分位数据
+            # ex_diameter2a = f_mea['ex_diameter1a'][:]
+            ex_diameter1a = f_mea['ex_diameter1a'][:]  # 升主动脉
+            ex_diameter2a = f_mea['ex_diameter2a'][:]  # 胸腹主动脉
+        le = len(ex_diameter1a)
+        if le > 50:
+            le = 50
+        else:
+            le = le
+        ex_diameter1aa = ex_diameter1a[::-1]  # 最大外接圆直径采用非拉直升主动脉+拉直胸腹主动脉
+        # ex_diameter2a = ex_diameter1aa
+        ex_diameter2a[-le:] = ex_diameter1aa[-le:]
+        try:
+            flag,x1,y1 = plot_index(ex_diameter2a)
+            if flag==2:
+                x_axis1.append(x1)
+                y_axis1.append(y1)
+            else:
+                x_axis2.append(x1)
+                y_axis2.append(y1)
+        except:
+            continue
+
+    x_axis1 = np.array(x_axis1)
+    y_axis1 = np.array(y_axis1)
+    x_axis2 = np.array(x_axis2)
+    y_axis2 = np.array(y_axis2)
+    # 动脉瘤判定阈值
+    EXPANSION_RATIO_THRESHOLD = 2.0
+    DIAMETER_THRESHOLD = 45.0
+
+    fig, ax = plt.subplots(figsize=(7.5, 5))
+    plt.scatter(x_axis1, y_axis1, s=3, facecolors='none', marker="o",
+                edgecolors="#ED8828", linewidths=1, alpha=1, zorder=2, label='Aneurysm')
+    plt.scatter(x_axis2, y_axis2, s=3, facecolors='none', marker="o",
+                edgecolors="#6495ED", linewidths=1, alpha=1, zorder=2, label='Non-aneurysm')
+    ax.set_xlabel("Maximum relative expansion ratio", fontsize=11)# 设置坐标轴标签和范围
+    ax.set_ylabel("Maximum absolute diameter (mm)", fontsize=11)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.tick_params(width=1.5, labelsize=11)  # Increase tick label size
+
+    plt.axvline(x=EXPANSION_RATIO_THRESHOLD, color="gray", linestyle='-.', lw=1.2, zorder=1)
+    plt.axhline(y=DIAMETER_THRESHOLD, color="gray", linestyle='-.', lw=1.2, zorder=1)
+    # ax.set_facecolor('white')
+    # 设置坐标轴范围，留出一些边距
+    ax.set_xlim(0.8, 3.0)
+    ax.set_ylim(20, 70)
+
+    # 添加图例
+    ax.legend(loc='upper right', fontsize=11)
+    # 调整布局
+    plt.tight_layout()
+
+    if not os.path.isdir(out_put):
+        os.makedirs(out_put)
+    save_path = os.path.join(out_put, save_name)
+    save_path += ".tif"
+    plt.savefig(save_path, dpi=300, format='tif')
+    plt.close(fig)
 
 if __name__ == '__main__':
     # statis1()#设定阈值统计
     # statis2()#
     # confusion_matrix1a()#
-    # fusion_confusion()
 
     # confusion_matrix1b()#
     # time_start = time.time()
     # diameter_index()
-    fusion_confusionad()
+    # fusion_confusionad()
     # time_end = time.time()
     # time_sum = time_end - time_start
     # print("total time:", time_sum)
@@ -1660,6 +1934,7 @@ if __name__ == '__main__':
     # total_matrics()
     # postprocess_mask() #前面混淆矩阵计算无误再运行这条
     # disp()
+    plot_morphological_decision_rules()
 
 
 
